@@ -18,7 +18,7 @@
         version: dev
         force: yes
 
-    - name: Install dependencies
+    - name: Install npm dependencies from package.json
       npm:
         path: "{{project_path}}"
       environment:
@@ -43,5 +43,14 @@
           DATABASE_URL=""
         dest: "{{project_path}}/.env.dev"
 
-    ## db stuff
-    ## run
+    - name: deploy migrations with prisma
+      command: "dotenv -e .env.dev prisma migrate deploy"
+      register: prisma_result
+      failed_when: prisma_result != 0
+
+    - name: start the application
+      command: pm2 start ecosystem.config.js --only richmond-dev
+      args:
+        chdir: "{{ path }}"
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
