@@ -1,0 +1,47 @@
+---
+- name: Initalize Project
+  hosts: dev
+  gather_facts: yes
+  become: yes
+  become_user: root
+
+  tasks:
+    - name: Create Project Directory
+      ansible.builtin.file:
+        path: "{{project_path}}"
+        state: directory
+
+    - name: Pull Code
+      git:
+        repo: "{{remote_repo}}"
+        dest: "{{project_path}}"
+        version: dev
+        force: yes
+
+    - name: Install dependencies
+      npm:
+        path: "{{project_path}}"
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+
+    - name: Create .env file
+      copy: |
+        content: |
+          JWT_SECRET=""
+          SENDGRID_API_KEY= ''
+        dest: "{{project_path}}/.env"
+
+    - name: Create .env.prod file
+      copy:
+        content: |
+          DATABASE_URL=""
+        dest: "{{project_path}}/.env.prod"
+
+    - name: Create .env.dev file
+      copy:
+        content: |
+          DATABASE_URL=""
+        dest: "{{project_path}}/.env.dev"
+
+    ## db stuff
+    ## run

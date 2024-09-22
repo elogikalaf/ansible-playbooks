@@ -1,0 +1,11 @@
+all:
+  hosts:
+    dev:
+      ansible_host: <ip_address>
+      ansible_port: <port>
+      ansible_user: <user>
+  vars:
+    node_version: <node_version>
+    nvm_path: <nvm_path>
+    project_path: <project_path>
+    remote_repo: <remote_repo>

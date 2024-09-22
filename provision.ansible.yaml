@@ -1,0 +1,56 @@
+---
+- name: Install Dependencies, provide requirements
+  hosts: dev
+  gather_facts: yes
+  become: yes
+  become_user: root
+
+  tasks:
+    - name: Install NVM
+      shell: >
+        curl https://raw.githubusercontent.com/creationix/nvm/v0.7.0/install.sh | sh
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+    - name: Install Node.js
+      shell: >
+        /bin/bash -c "source ~/.nvm/nvm.sh && nvm install 20"
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/versions/node"
+        chdir: "{{ ansible_env.HOME }}"
+        executable: /bin/bash
+
+    - name: Install PM2 using npm built-in module
+      npm:
+        name: pm2
+        global: yes
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+      # when: "'pm2' not in lookup('pipe', 'command -v pm2')"
+
+    - name: Install dotenv-cli using npm built-in module
+      npm:
+        name: dotenv-cli
+        global: yes
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+
+    - name: install postgres
+      ansible.builtin.dnf:
+        name: postgresql
+
+    - name: Check Node and Npm Version
+      shell: "node -v && npm -v && pm2 --version"
+      register: result
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+
+    - name: Print Node and Npm version
+      debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Ensure gitlab.com SSH host key is added to known_hosts
+      known_hosts:
+        name: gitlab.com
+        key: "{{ lookup('pipe', 'ssh-keyscan -t rsa gitlab.com') }}"
+        path: "{{ ansible_env.HOME }}/.ssh/known_hosts"
