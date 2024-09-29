@@ -1,5 +1,5 @@
 ---
-- name: Initalize Project
+- name: Initalize Project/ Integrate new Update
   hosts: dev
   gather_facts: yes
   become: yes
@@ -25,32 +25,44 @@
         PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
 
     - name: Create .env file
-      copy: |
+      copy:
         content: |
           JWT_SECRET=""
           SENDGRID_API_KEY= ''
         dest: "{{project_path}}/.env"
+        force: false
 
     - name: Create .env.prod file
       copy:
         content: |
           DATABASE_URL=""
         dest: "{{project_path}}/.env.prod"
+        force: false
 
     - name: Create .env.dev file
       copy:
         content: |
           DATABASE_URL=""
         dest: "{{project_path}}/.env.dev"
+        force: false
 
     - name: deploy migrations with prisma
-      command: "dotenv -e .env.dev prisma migrate deploy"
+      command: "dotenv -e .env.dev npx prisma migrate deploy"
+      args:
+        chdir: "{{ project_path }}"
       register: prisma_result
-      failed_when: prisma_result != 0
+      failed_when: prisma_result.rc != 0
+      environment:
+        PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+
+    - name: log prisma result
+      debug:
+        msg: "{{prisma_result.stdout}}\n:{{prisma_result.stderr}}\n:{{prisma_result.rc}}"
 
     - name: start the application
       command: pm2 start ecosystem.config.js --only richmond-dev
       args:
-        chdir: "{{ path }}"
+        chdir: "{{ project_path }}"
       environment:
         PATH: "{{ansible_env.PATH}}:{{nvm_path}}"
+
